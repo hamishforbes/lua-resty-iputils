@@ -64,3 +64,6 @@ Takes a string IPv4 address and a table of parsed CIDRs (e.g. from `iputils.pars
 Returns a `true` or `false` if the IP exists within *any* of the specified networks.
 
 Returns `nil` and an error message with an invalid IP
+
+##TODO
+ * IPv6 support
