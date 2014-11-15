@@ -40,6 +40,7 @@ local function enable_lrucache(size)
         return nil, "failed to create the cache: " .. (err or "unknown")
     end
     lrucache = lrucache_obj
+    return true
 end
 _M.enable_lrucache = enable_lrucache
 
