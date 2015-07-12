@@ -8,13 +8,14 @@ local lshift     = bit.lshift
 local band       = bit.band
 local bor        = bit.bor
 local xor        = bit.bxor
-local match     = string.match
+local byte       = string.byte
+local match      = ngx.re.match
 
 local resty_lrucache = require "resty.lrucache"
 local lrucache = nil
 
 local _M = {
-    _VERSION = '0.01',
+    _VERSION = '0.02',
 }
 
 local mt = { __index = _M }
@@ -46,11 +47,11 @@ _M.enable_lrucache = enable_lrucache
 
 
 local function split_octets(input)
-    local oct1, oct2, oct3, oct4 = match(input, "(%d+)%.(%d+)%.(%d+)%.(%d+)")
-    if not oct1 then
+    local octs, err = match(input, [[(\d+)\.(\d+)\.(\d+)\.(\d+)]])
+    if not octs then
         return nil
     end
-    return {oct1, oct2, oct3, oct4}
+    return octs
 end
 
 
@@ -92,11 +93,11 @@ _M.ip2bin = ip2bin
 
 
 local function split_cidr(input)
-    local net, mask = match(input, "(.+)/(%d+)")
-    if not net then
+    local res, err = match(input, [[(.+)/(\d+)]])
+    if not res then
         return {input}
     end
-    return {net, mask}
+    return res
 end
 
 
@@ -155,5 +156,23 @@ local function ip_in_cidrs(ip, cidrs)
 end
 _M.ip_in_cidrs = ip_in_cidrs
 
+local function binip_in_cidrs(bin_ip_ngx, cidrs)
+    if 4 ~= #bin_ip_ngx then
+        return false, "invalid IP address"
+    end
+
+    local bin_ip = 0
+    for i=1,4 do
+        bin_ip = bor(lshift(bin_ip, 8), tobit(byte(bin_ip_ngx, i)))
+    end
+
+    for _,cidr in ipairs(cidrs) do
+        if bin_ip >= cidr[1] and bin_ip <= cidr[2] then
+            return true
+        end
+    end
+    return false
+end
+_M.binip_in_cidrs = binip_in_cidrs
 
 return _M
