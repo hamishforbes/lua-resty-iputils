@@ -65,5 +65,14 @@ Returns a `true` or `false` if the IP exists within *any* of the specified netwo
 
 Returns `nil` and an error message with an invalid IP
 
+### binip_in_cidrs
+`syntax: bool, err = iputils.binip_in_cidrs(bin_ip, cidrs)`
+
+Takes a nginx binary IPv4 address(e.g. ngx.var.binary_remote_addr) and a table of parsed CIDRs (e.g. from `iputils.parse_cidrs`). Its more faster than [ip_in_cidrs](#ip_in_cidrs) way. 
+
+Returns a `true` or `false` if the IP exists within *any* of the specified networks.
+
+Returns `nil` and an error message with an invalid IP
+
 ##TODO
  * IPv6 support
