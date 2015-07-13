@@ -13,7 +13,7 @@ init_by_lua '
       "10.10.10.0/24",
       "192.168.0.0/16",
   }
-  
+
   -- WARNING: Global variable, recommend this is cached at the module level
   -- https://github.com/openresty/lua-nginx-module#data-sharing-within-an-nginx-worker
   whitelist = iputils.parse_cidrs(whitelist_ips)
@@ -31,7 +31,7 @@ access_by_lua '
 ### enable_lrucache
 `syntax: ok, err = iputils.enable_lrucache(size?)`
 
-Creates a global lrucache object for caching ip2bin lookups. 
+Creates a global lrucache object for caching ip2bin lookups.
 
 Size is optional and defaults to 4000 entries (~1MB per worker)
 
@@ -68,7 +68,9 @@ Returns `nil` and an error message with an invalid IP
 ### binip_in_cidrs
 `syntax: bool, err = iputils.binip_in_cidrs(bin_ip, cidrs)`
 
-Takes a nginx binary IPv4 address(e.g. ngx.var.binary_remote_addr) and a table of parsed CIDRs (e.g. from `iputils.parse_cidrs`). Its more faster than [ip_in_cidrs](#ip_in_cidrs) way. 
+Takes a nginx binary IPv4 address (e.g. `ngx.var.binary_remote_addr`) and a table of parsed CIDRs (e.g. from `iputils.parse_cidrs`).
+
+This method is much faster than `ip_in_cidrs()` if the IP being checked is already available as a binary representation.
 
 Returns a `true` or `false` if the IP exists within *any* of the specified networks.
 
