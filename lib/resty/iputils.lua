@@ -9,7 +9,8 @@ local band       = bit.band
 local bor        = bit.bor
 local xor        = bit.bxor
 local byte       = string.byte
-local match      = ngx.re.match
+local str_find   = string.find
+local str_sub    = string.sub
 
 local resty_lrucache = require "resty.lrucache"
 local lrucache = nil
@@ -47,10 +48,28 @@ _M.enable_lrucache = enable_lrucache
 
 
 local function split_octets(input)
-    local octs, err = match(input, [[(\d+)\.(\d+)\.(\d+)\.(\d+)]])
-    if not octs then
-        return nil
+    local pos = 0
+    local prev = 0
+    local octs = {}
+
+    for i=1, 4 do
+        pos = str_find(input, ".", prev, true)
+        if pos then
+            if i == 4 then
+                -- Should not have a match after 4 octets
+                return nil, "Invalid IP"
+            end
+            octs[i] = str_sub(input, prev, pos-1)
+        elseif i == 4 then
+            -- Last octet, get everything to the end
+            octs[i] = str_sub(input, prev, -1)
+            break
+        else
+            return nil, "Invalid IP"
+        end
+        prev = pos +1
     end
+
     return octs
 end
 
@@ -77,13 +96,15 @@ local function ip2bin(ip)
     local bin_ip = 0
 
     for i,octet in ipairs(octets) do
-        local bin_octet = tobit(tonumber(octet))
-        if bin_octet > 255 then
-            return nil, "Octet out of range: "..tostring(octet)
+        local bin_octet = tonumber(octet)
+        if not bin_octet or bin_octet > 255 then
+            return nil, "Invalid octet: "..tostring(octet)
         end
+        bin_octet = tobit(bin_octet)
         bin_octets[i] = bin_octet
         bin_ip = bor(lshift(bin_octet, 8*(4-i) ), bin_ip)
     end
+
     if lrucache then
         lrucache:set(ip, {bin_ip, bin_octets})
     end
@@ -93,11 +114,11 @@ _M.ip2bin = ip2bin
 
 
 local function split_cidr(input)
-    local res, err = match(input, [[(.+)/(\d+)]])
-    if not res then
+    local pos = str_find(input, "/", 0, true)
+    if not pos then
         return {input}
     end
-    return res
+    return {str_sub(input, 1, pos-1), str_sub(input, pos+1, -1)}
 end
 
 
@@ -105,9 +126,9 @@ local function parse_cidr(cidr)
     local mask_split = split_cidr(cidr, '/')
     local net        = mask_split[1]
     local mask       = mask_split[2] or "32"
-    local mask_num = tonumber(mask)
-    if mask_num > 32 or mask_num < 1 then
-        return nil, "Invalid prefix: /"..mask
+    local mask_num   = tonumber(mask)
+    if not mask_num or (mask_num > 32 or mask_num < 1) then
+        return nil, "Invalid prefix: /"..tostring(mask)
     end
 
     local bin_net, err = ip2bin(net) -- Convert IP to binary
@@ -155,6 +176,7 @@ local function ip_in_cidrs(ip, cidrs)
     return false
 end
 _M.ip_in_cidrs = ip_in_cidrs
+
 
 local function binip_in_cidrs(bin_ip_ngx, cidrs)
     if 4 ~= #bin_ip_ngx then
