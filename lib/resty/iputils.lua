@@ -9,7 +9,7 @@ local band       = bit.band
 local bor        = bit.bor
 local xor        = bit.bxor
 local byte       = string.byte
-local match      = ngx.re.match
+local match     = string.match
 
 local resty_lrucache = require "resty.lrucache"
 local lrucache = nil
@@ -47,11 +47,11 @@ _M.enable_lrucache = enable_lrucache
 
 
 local function split_octets(input)
-    local octs, err = match(input, [[(\d+)\.(\d+)\.(\d+)\.(\d+)]])
-    if not octs then
+    local oct1, oct2, oct3, oct4 = match(input, "(%d+)%.(%d+)%.(%d+)%.(%d+)")
+    if not oct1 then
         return nil
     end
-    return octs
+    return {oct1, oct2, oct3, oct4}
 end
 
 
@@ -93,11 +93,11 @@ _M.ip2bin = ip2bin
 
 
 local function split_cidr(input)
-    local res, err = match(input, [[(.+)/(\d+)]])
-    if not res then
+    local net, mask = match(input, "(.+)/(%d+)")
+    if not net then
         return {input}
     end
-    return res
+    return {net, mask}
 end
 
 
@@ -158,7 +158,7 @@ _M.ip_in_cidrs = ip_in_cidrs
 
 local function binip_in_cidrs(bin_ip_ngx, cidrs)
     if 4 ~= #bin_ip_ngx then
-        return false, "invalid IP address"
+        return nil, "invalid IP address"
     end
 
     local bin_ip = 0
