@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => repeat_each() * 21;
+plan tests => repeat_each() * 24;
 
 my $pwd = cwd();
 
@@ -60,7 +60,7 @@ GET /a
 0
 1
 
-=== TEST 3: ip2bin returns error on bad ip form
+=== TEST 3: ip2bin returns error on bad ip form - too few octets
 --- http_config eval
 "$::HttpConfig"
 . q{
@@ -109,7 +109,7 @@ GET /a
 --- response_body
 IP must be a string
 
-=== TEST 3b: ip2bin returns error on bad ip form
+=== TEST 3b: ip2bin returns error on bad ip form - octet out of bounds
 --- http_config eval
 "$::HttpConfig"
 . q{
@@ -131,9 +131,9 @@ GET /a
 --- no_error_log
 [error]
 --- response_body
-Octet out of range: 256
+Invalid octet: 256
 
-=== TEST 3c: ip2bin returns error on bad ip form
+=== TEST 3c: ip2bin returns error on bad ip form - string octet
 --- http_config eval
 "$::HttpConfig"
 . q{
@@ -143,6 +143,30 @@ Octet out of range: 256
         content_by_lua '
             local iputils = require("resty.iputils")
             local bin_ip, bin_octets = iputils.ip2bin("127.0.asdf.1")
+            if not bin_ip then
+                ngx.say(bin_octets)
+            else
+                ngx.say(bin_ip)
+            end
+        ';
+    }
+--- request
+GET /a
+--- no_error_log
+[error]
+--- response_body
+Invalid octet: asdf
+
+=== TEST 3d: ip2bin returns error on bad ip form - too many octets
+--- http_config eval
+"$::HttpConfig"
+. q{
+}
+--- config
+    location /a {
+        content_by_lua '
+            local iputils = require("resty.iputils")
+            local bin_ip, bin_octets = iputils.ip2bin("127.0.0.0.1")
             if not bin_ip then
                 ngx.say(bin_octets)
             else

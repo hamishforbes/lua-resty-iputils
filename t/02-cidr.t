@@ -101,7 +101,7 @@ GET /a
 [error]
 --- response_body
 nil
-Octet out of range: 300
+Invalid octet: 300
 
 === TEST 4a: cidr in bad form returns error message
 --- http_config eval

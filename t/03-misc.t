@@ -111,7 +111,7 @@ Error parsing '10.10.20.0/40': Invalid prefix: /40
 --- request
 GET /a
 --- error_log
-Error parsing '300.0.0.0': Octet out of range: 300
+Error parsing '300.0.0.0': Invalid octet: 300
 --- response_body
 168430080 168430335
 168430336 168430591
@@ -214,7 +214,7 @@ GET /a
 --- no_error_log
 [error]
 --- response_body
-Octet out of range: 400
+Invalid octet: 400
 
 === TEST 5: binip_in_cidrs checks ip exists in array of parsed cidrs
 --- http_config eval
