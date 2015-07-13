@@ -8,13 +8,14 @@ local lshift     = bit.lshift
 local band       = bit.band
 local bor        = bit.bor
 local xor        = bit.bxor
+local byte       = string.byte
 local match     = string.match
 
 local resty_lrucache = require "resty.lrucache"
 local lrucache = nil
 
 local _M = {
-    _VERSION = '0.01',
+    _VERSION = '0.02',
 }
 
 local mt = { __index = _M }
@@ -155,5 +156,23 @@ local function ip_in_cidrs(ip, cidrs)
 end
 _M.ip_in_cidrs = ip_in_cidrs
 
+local function binip_in_cidrs(bin_ip_ngx, cidrs)
+    if 4 ~= #bin_ip_ngx then
+        return nil, "invalid IP address"
+    end
+
+    local bin_ip = 0
+    for i=1,4 do
+        bin_ip = bor(lshift(bin_ip, 8), tobit(byte(bin_ip_ngx, i)))
+    end
+
+    for _,cidr in ipairs(cidrs) do
+        if bin_ip >= cidr[1] and bin_ip <= cidr[2] then
+            return true
+        end
+    end
+    return false
+end
+_M.binip_in_cidrs = binip_in_cidrs
 
 return _M
