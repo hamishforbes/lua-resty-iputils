@@ -78,7 +78,7 @@ local function ip2bin(ip)
     if lrucache then
         local get = lrucache:get(ip)
         if get then
-            return unpack(get)
+            return get[1], get[2]
         end
     end
 
