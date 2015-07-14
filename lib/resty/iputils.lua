@@ -1,4 +1,4 @@
-local ipairs, unpack, tonumber, tostring, type = ipairs, unpack, tonumber, tostring, type
+local ipairs, tonumber, tostring, type = ipairs, tonumber, tostring, type
 local bit        = require("bit")
 local tobit      = bit.tobit
 local lshift     = bit.lshift
@@ -30,11 +30,21 @@ for i=1,32 do
     bin_inverted_masks[i] = xor(bin_masks[i], bin_masks["32"])
 end
 
+local log_err
+if ngx then
+    log_err = function(...)
+        ngx.log(ngx.ERR, ...)
+    end
+else
+    log_err = function(...)
+        print(...)
+    end
+end
+
 
 local function enable_lrucache(size)
-    local resty_lrucache = require "resty.lrucache"
     local size = size or 4000  -- Cache the last 4000 IPs (~1MB memory) by default
-    local lrucache_obj, err = resty_lrucache.new(4000)
+    local lrucache_obj, err = require("resty.lrucache").new(4000)
     if not lrucache_obj then
         return nil, "failed to create the cache: " .. (err or "unknown")
     end
@@ -148,9 +158,7 @@ local function parse_cidrs(cidrs)
     for _,cidr in ipairs(cidrs) do
         local lower, upper = parse_cidr(cidr)
         if not lower then
-            if ngx then
-                ngx.log(ngx.ERR, "Error parsing '", cidr, "': ", upper)
-            end
+            log_err("Error parsing '", cidr, "': ", upper)
         else
             out[i] = {lower, upper}
             i = i+1
