@@ -12,7 +12,6 @@ local byte       = string.byte
 local str_find   = string.find
 local str_sub    = string.sub
 
-local resty_lrucache = require "resty.lrucache"
 local lrucache = nil
 
 local _M = {
@@ -36,6 +35,7 @@ end
 
 
 local function enable_lrucache(size)
+    local resty_lrucache = require "resty.lrucache"
     local size = size or 4000  -- Cache the last 4000 IPs (~1MB memory) by default
     local lrucache_obj, err = resty_lrucache.new(4000)
     if not lrucache_obj then
