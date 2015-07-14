@@ -1,7 +1,4 @@
 local ipairs, unpack, tonumber, tostring, type = ipairs, unpack, tonumber, tostring, type
-local ngx        = ngx
-local ngx_log    = ngx.log
-local ngx_ERR    = ngx.ERR
 local bit        = require("bit")
 local tobit      = bit.tobit
 local lshift     = bit.lshift
@@ -151,7 +148,9 @@ local function parse_cidrs(cidrs)
     for _,cidr in ipairs(cidrs) do
         local lower, upper = parse_cidr(cidr)
         if not lower then
-            ngx_log(ngx_ERR, "Error parsing '", cidr, "': ", upper)
+            if ngx then
+                ngx.log(ngx.ERR, "Error parsing '", cidr, "': ", upper)
+            end
         else
             out[i] = {lower, upper}
             i = i+1
