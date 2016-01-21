@@ -77,4 +77,4 @@ Returns a `true` or `false` if the IP exists within *any* of the specified netwo
 Returns `nil` and an error message with an invalid IP
 
 ##TODO
- * IPv6 support
+ * IPv6 support - Alternative library supporting ipv6 - [lua-libcidr-ffi](https://github.com/GUI/lua-libcidr-ffi)
