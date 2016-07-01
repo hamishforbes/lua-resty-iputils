@@ -44,7 +44,7 @@ end
 
 local function enable_lrucache(size)
     local size = size or 4000  -- Cache the last 4000 IPs (~1MB memory) by default
-    local lrucache_obj, err = require("resty.lrucache").new(4000)
+    local lrucache_obj, err = require("resty.lrucache").new(size)
     if not lrucache_obj then
         return nil, "failed to create the cache: " .. (err or "unknown")
     end
