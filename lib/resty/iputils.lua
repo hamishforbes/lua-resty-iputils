@@ -12,7 +12,7 @@ local str_sub    = string.sub
 local lrucache = nil
 
 local _M = {
-    _VERSION = '0.02',
+    _VERSION = '0.2.1',
 }
 
 local mt = { __index = _M }
