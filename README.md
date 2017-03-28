@@ -1,11 +1,11 @@
-#lua-resty-iputils
+# lua-resty-iputils
 
 Collection of utility functions for working with IP addresses.
 
-#Overview
+# Overview
 
 ```
-init_by_lua '
+init_by_lua_block {
   local iputils = require("resty.iputils")
   iputils.enable_lrucache()
   local whitelist_ips = {
@@ -17,17 +17,17 @@ init_by_lua '
   -- WARNING: Global variable, recommend this is cached at the module level
   -- https://github.com/openresty/lua-nginx-module#data-sharing-within-an-nginx-worker
   whitelist = iputils.parse_cidrs(whitelist_ips)
-';
+}
 
-access_by_lua '
+access_by_lua_block {
     local iputils = require("resty.iputils")
     if not iputils.ip_in_cidrs(ngx.var.remote_addr, whitelist) then
       return ngx.exit(ngx.HTTP_FORBIDDEN)
     end
-';
+}
 ```
 
-#Methods
+# Methods
 ### enable_lrucache
 `syntax: ok, err = iputils.enable_lrucache(size?)`
 
@@ -76,5 +76,5 @@ Returns a `true` or `false` if the IP exists within *any* of the specified netwo
 
 Returns `nil` and an error message with an invalid IP
 
-##TODO
+## TODO
  * IPv6 support - Alternative library supporting ipv6 - [lua-libcidr-ffi](https://github.com/GUI/lua-libcidr-ffi)
