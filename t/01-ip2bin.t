@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => repeat_each() * 24;
+plan tests => repeat_each() * 27;
 
 my $pwd = cwd();
 
@@ -34,6 +34,30 @@ GET /a
 [error]
 --- response_body
 2130706433
+
+=== TEST 1b: ip2bin returns an unsigned binary representation of IP
+--- http_config eval
+"$::HttpConfig"
+. q{
+}
+--- config
+    location /a {
+        content_by_lua_block {
+            local iputils = require("resty.iputils")
+            local bin_ip, bin_octets = iputils.ip2bin("255.255.255.255")
+            ngx.say(bin_ip)
+            local bin_ip, bin_octets = iputils.ip2bin("250.250.250.250")
+            ngx.say(bin_ip)
+        }
+    }
+--- request
+GET /a
+--- no_error_log
+[error]
+--- response_body
+4294967295
+4210752250
+
 
 === TEST 2: ip2bin returns binary representation of each octet
 --- http_config eval

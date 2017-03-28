@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => repeat_each() * 18;
+plan tests => repeat_each() * 21;
 
 my $pwd = cwd();
 
@@ -36,6 +36,28 @@ GET /a
 --- response_body
 168430080
 168430335
+
+=== TEST 1b: parse_cidr returns unsigned lower and upper bounds of network
+--- http_config eval
+"$::HttpConfig"
+. q{
+}
+--- config
+    location /a {
+        content_by_lua '
+            local iputils = require("resty.iputils")
+            local lower, upper = iputils.parse_cidr("250.250.250.0/24")
+            ngx.say(lower)
+            ngx.say(upper)
+        ';
+    }
+--- request
+GET /a
+--- no_error_log
+[error]
+--- response_body
+4210752000
+4210752255
 
 === TEST 2: cidr with last octet in middle of range
 --- http_config eval

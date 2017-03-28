@@ -1,7 +1,7 @@
 use Test::Nginx::Socket;
 use Cwd qw(cwd);
 
-plan tests => repeat_each() * 27;
+plan tests => repeat_each() * 30;
 
 my $pwd = cwd();
 
@@ -310,3 +310,68 @@ GET /a
 --- response_body
 OK
 
+=== TEST 6: 0.0.0.0/0 CIDR parses corrected
+--- http_config eval
+"$::HttpConfig"
+. q{
+}
+--- config
+    location /a {
+        content_by_lua_block {
+            local iputils = require("resty.iputils")
+
+            local iputils = require("resty.iputils")
+            local lower, upper = iputils.parse_cidr("0.0.0.0/0")
+            if not lower then
+                ngx.say(upper)
+            else
+                ngx.say(lower, " ", upper)
+            end
+
+
+            local pass, err = iputils.ip_in_cidrs("10.10.12.100", {{lower, upper}})
+            if pass == true then
+                ngx.say("OK")
+            elseif err then
+                ngx.say(err)
+            else
+                ngx.say("FAIL")
+            end
+
+            local pass, err = iputils.ip_in_cidrs("1.1.1.1", {{lower, upper}})
+            if pass == true then
+                ngx.say("OK")
+            elseif err then
+                ngx.say(err)
+            else
+                ngx.say("FAIL")
+            end
+            local pass, err = iputils.ip_in_cidrs("0.0.0.0", {{lower, upper}})
+            if pass == true then
+                ngx.say("OK")
+            elseif err then
+                ngx.say(err)
+            else
+                ngx.say("FAIL")
+            end
+
+            local pass, err = iputils.ip_in_cidrs("255.255.255.255", {{lower, upper}})
+            if pass == true then
+                ngx.say("OK")
+            elseif err then
+                ngx.say(err)
+            else
+                ngx.say("FAIL")
+            end
+        }
+    }
+--- request
+GET /a
+--- no_error_log
+[error]
+--- response_body
+0 4294967295
+OK
+OK
+OK
+OK
