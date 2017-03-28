@@ -20,12 +20,12 @@ local mt = { __index = _M }
 
 -- Precompute binary subnet masks...
 local bin_masks = {}
-for i=1,32 do
+for i=0,32 do
     bin_masks[tostring(i)] = lshift(tobit((2^i)-1), 32-i)
 end
 -- ... and their inverted counterparts
 local bin_inverted_masks = {}
-for i=1,32 do
+for i=0,32 do
     local i = tostring(i)
     bin_inverted_masks[i] = xor(bin_masks[i], bin_masks["32"])
 end
@@ -81,6 +81,14 @@ local function split_octets(input)
 end
 
 
+local function unsign(bin)
+    if bin < 0 then
+        return 4294967296 + bin
+    end
+    return bin
+end
+
+
 local function ip2bin(ip)
     if lrucache then
         local get = lrucache:get(ip)
@@ -112,6 +120,7 @@ local function ip2bin(ip)
         bin_ip = bor(lshift(bin_octet, 8*(4-i) ), bin_ip)
     end
 
+    bin_ip = unsign(bin_ip)
     if lrucache then
         lrucache:set(ip, {bin_ip, bin_octets})
     end
@@ -134,7 +143,8 @@ local function parse_cidr(cidr)
     local net        = mask_split[1]
     local mask       = mask_split[2] or "32"
     local mask_num   = tonumber(mask)
-    if not mask_num or (mask_num > 32 or mask_num < 1) then
+
+    if not mask_num or (mask_num > 32 or mask_num < 0) then
         return nil, "Invalid prefix: /"..tostring(mask)
     end
 
@@ -147,7 +157,7 @@ local function parse_cidr(cidr)
 
     local lower = band(bin_net, bin_mask) -- Network address
     local upper = bor(lower, bin_inv_mask) -- Broadcast address
-    return lower, upper
+    return unsign(lower), unsign(upper)
 end
 _M.parse_cidr = parse_cidr
 
@@ -194,6 +204,7 @@ local function binip_in_cidrs(bin_ip_ngx, cidrs)
     for i=1,4 do
         bin_ip = bor(lshift(bin_ip, 8), tobit(byte(bin_ip_ngx, i)))
     end
+    bin_ip = unsign(bin_ip)
 
     for _,cidr in ipairs(cidrs) do
         if bin_ip >= cidr[1] and bin_ip <= cidr[2] then
