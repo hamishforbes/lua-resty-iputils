@@ -1,6 +1,5 @@
 local ipairs, tonumber, tostring, type = ipairs, tonumber, tostring, type
 local bit        = require("bit")
-local tobit      = bit.tobit
 local lshift     = bit.lshift
 local band       = bit.band
 local bor        = bit.bor
@@ -21,7 +20,7 @@ local mt = { __index = _M }
 -- Precompute binary subnet masks...
 local bin_masks = {}
 for i=0,32 do
-    bin_masks[tostring(i)] = lshift(tobit((2^i)-1), 32-i)
+    bin_masks[tostring(i)] = lshift((2^i)-1, 32-i)
 end
 -- ... and their inverted counterparts
 local bin_inverted_masks = {}
@@ -112,10 +111,9 @@ local function ip2bin(ip)
 
     for i,octet in ipairs(octets) do
         local bin_octet = tonumber(octet)
-        if not bin_octet or bin_octet > 255 then
+        if not bin_octet or bin_octet < 0 or bin_octet > 255 then
             return nil, "Invalid octet: "..tostring(octet)
         end
-        bin_octet = tobit(bin_octet)
         bin_octets[i] = bin_octet
         bin_ip = bor(lshift(bin_octet, 8*(4-i) ), bin_ip)
     end
@@ -202,7 +200,7 @@ local function binip_in_cidrs(bin_ip_ngx, cidrs)
 
     local bin_ip = 0
     for i=1,4 do
-        bin_ip = bor(lshift(bin_ip, 8), tobit(byte(bin_ip_ngx, i)))
+        bin_ip = bor(lshift(bin_ip, 8), byte(bin_ip_ngx, i))
     end
     bin_ip = unsign(bin_ip)
 
