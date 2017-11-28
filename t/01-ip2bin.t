@@ -8,7 +8,7 @@ my $pwd = cwd();
 $ENV{TEST_LEDGE_REDIS_DATABASE} ||= 1;
 
 our $HttpConfig = qq{
-    lua_package_path "$pwd/lib/?.lua;;";
+    lua_package_path "$pwd/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 };
 
 no_long_string();
