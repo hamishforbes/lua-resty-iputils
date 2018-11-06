@@ -16,6 +16,30 @@ local _M = {
 
 local mt = { __index = _M }
 
+local ffi = require("ffi")
+ffi.cdef[[
+typedef struct {
+  int     version;
+  uint8_t addr[16];
+  uint8_t mask[16];
+  int     proto;
+} CIDR;
+CIDR *cidr_from_str(const char *);
+char *cidr_to_str(const CIDR *, int);
+int cidr_contains(const CIDR *, const CIDR *);
+void cidr_free(CIDR *);
+void free(void *);
+]]
+
+local cidr = ffi.load("cidr")
+
+local errs = {
+  EINVAL = 22,
+  ENOENT = 2,
+  ENOMEM = 12,
+  EFAULT = 14,
+  EPROTO = 71,
+}
 
 -- Precompute binary subnet masks...
 local bin_masks = {}
@@ -176,6 +200,109 @@ local function parse_cidrs(cidrs)
 end
 _M.parse_cidrs = parse_cidrs
 
+
+
+local function from_str(string)
+  local result = cidr.cidr_from_str(string)
+  if result == nil then
+    local errno = ffi.errno()
+    if errno == errs.EFAULT then
+      return nil, "Passed NULL"
+    elseif errno == errs.EINVAL then
+      return nil, "Can't parse the input string"
+    elseif errno == errs.ENOENT then
+      return nil, "Internal error"
+    end
+  end
+
+  result = ffi.gc(result, cidr.cidr_free)
+
+  return result
+end
+
+local function to_str(struct)
+  if type(struct) ~= "cdata" then
+    return nil, "Invalid argument (bad block or flags)"
+  end
+
+  local result = cidr.cidr_to_str(struct, 0)
+  if result == nil then
+    local errno = ffi.errno()
+    if errno == errs.EINVAL then
+      return nil, "Invalid argument (bad block or flags)"
+    elseif errno == errs.ENOENT then
+      return nil, "Internal error"
+    elseif errno == errs.ENOMEM then
+      return nil, "malloc() failed"
+    end
+  end
+
+  local string = ffi.string(result)
+  ffi.C.free(result)
+
+  return string
+end
+
+local function contains(big, little)
+  if big == nil or little == nil then
+    return nil, "Passed NULL"
+  elseif type(big) ~= "cdata" or type(little) ~= "cdata" then
+    return nil, "Invalid argument"
+  end
+
+  local result = cidr.cidr_contains(big, little)
+  if result == 0 then
+    return true
+  else
+    local errno = ffi.errno()
+    if errno == errs.EFAULT then
+      return nil, "Passed NULL"
+    elseif errno == errs.EINVAL then
+      return nil, "Invalid argument"
+    elseif errno == errs.ENOENT then
+      return nil, "Internal error"
+    elseif errno == errs.EPROTO then
+      return nil, "Protocols don't match"
+    end
+
+    return false
+  end
+end
+
+
+local function parse_cidrs_ipv6(cidrs)
+    local out = {}
+    local i = 1
+    for _, cidr in ipairs(cidrs) do
+        local struct, err = from_str(cidr)
+        if not struct then
+            log_err("Error parsing '", cidr, "': ", err)
+        else
+            out[i] = struct
+            i = i+1
+        end
+    end
+    return out
+end
+
+_M.parse_cidrs_ipv6 = parse_cidrs_ipv6
+
+local function ip_in_cidrs_ipv6(ip, cidrs)
+    local struct, err = from_str(ip)
+    if not struct then
+        log_err("Error parsing '", ip, "': ", err)
+        return false
+    end
+
+    for _, cidr in ipairs(cidrs) do
+       if contains(cidr, struct) then
+           return true
+       end 
+    end
+    return false
+end
+
+_M.ip_in_cidrs_ipv6 = ip_in_cidrs_ipv6
 
 local function ip_in_cidrs(ip, cidrs)
     local bin_ip, bin_octets = ip2bin(ip)
