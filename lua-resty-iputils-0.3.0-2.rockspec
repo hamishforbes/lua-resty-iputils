@@ -1,5 +1,5 @@
 package = "lua-resty-iputils"
-version = "0.3.0-1"
+version = "0.3.0-2"
 
 source = {
   url = "git+https://github.com/hamishforbes/lua-resty-iputils.git",
