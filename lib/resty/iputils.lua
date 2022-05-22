@@ -137,6 +137,21 @@ end
 
 
 local function parse_cidr(cidr)
+    local s, e = string.find(cidr, '-', 0, true)
+    if s ~= nil then
+        local sIP = string.sub(cidr, 0, s - 1)
+        local eIP = string.sub(cidr, e + 1, string.len(cidr))
+        local lower, _ = ip2bin(sIP) -- Convert IP to binary
+        if not lower then
+            return nil, nil
+        end
+        local upper, _ = ip2bin(eIP) -- Convert IP to binary
+        if not upper then
+            return nil, nil
+        end
+        return unsign(lower), unsign(upper)
+    end   
+
     local mask_split = split_cidr(cidr, '/')
     local net        = mask_split[1]
     local mask       = mask_split[2] or "32"
