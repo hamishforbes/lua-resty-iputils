@@ -1,6 +1,7 @@
 local ipairs, tonumber, tostring, type = ipairs, tonumber, tostring, type
 local bit        = require("bit")
 local lshift     = bit.lshift
+local rshift     = bit.rshift
 local band       = bit.band
 local bor        = bit.bor
 local xor        = bit.bxor
@@ -212,5 +213,24 @@ local function binip_in_cidrs(bin_ip_ngx, cidrs)
     return false
 end
 _M.binip_in_cidrs = binip_in_cidrs
+
+local function cidr2ips(cidr)
+    local rs = {}
+    local lower, upper = parse_cidr(cidr)
+    if not lower then
+        log_err("Error parsing '", cidr, "': ", upper)
+        return rs
+    end
+
+    for i = lower + 1, upper - 1 do
+        local ip =
+            band(rshift(i, 24), 0xFF) ..
+            "." .. band(rshift(i, 16), 0xFF) .. "." .. band(rshift(i, 8), 0xFF) .. "." .. band(i, 0xFF)
+        table.insert(rs, ip)
+    end
+
+    return rs
+end
+_M.cidr2ips = cidr2ips
 
 return _M
